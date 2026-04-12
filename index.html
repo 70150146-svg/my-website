@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FB Broadcaster Pro</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230084ff'/><text x='50' y='68' font-size='55' text-anchor='middle' fill='white' font-family='sans-serif'>📢</text></svg>">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════
+   BASE
+═══════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    overflow: hidden;
+    background: #0f1117;
+    font-family: Inter, system-ui, "Segoe UI", Roboto, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ═══════════════════════════════════════════
+   MAIN WRAPPER — full screen (no sidebar)
+═══════════════════════════════════════════ */
+.pw {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: #0f1117;
+}
+
+/* ═══════════════════════════════════════════
+   TOP BAR
+═══════════════════════════════════════════ */
+.pw-topbar {
+    height: 60px;
+    background: linear-gradient(135deg, #1877f2 0%, #0084ff 45%, #7b2ff7 100%);
+    display: flex;
+    align-items: center;
+    padding: 0 22px;
+    gap: 14px;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 20px rgba(0,132,255,.4);
+}
+.pw-topbar::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 120% at 60% -20%, rgba(255,255,255,.12) 0%, transparent 70%);
+    pointer-events: none;
+}
+.pw-topbar-logo {
+    width: 38px; height: 38px;
+    background: rgba(255,255,255,.2);
+    border: 1px solid rgba(255,255,255,.3);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px; color: white; flex-shrink: 0;
+    backdrop-filter: blur(8px);
+}
+.pw-topbar-title { flex: 1; }
+.pw-topbar-title h1 {
+    color: #fff; font-size: 15px; font-weight: 800;
+    letter-spacing: -.2px; line-height: 1;
+}
+.pw-topbar-title p { color: rgba(255,255,255,.65); font-size: 11px; margin-top: 2px; }
+
+#loginStatus {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; font-weight: 600;
+    padding: 5px 12px; border-radius: 20px;
+    background: rgba(0,0,0,.25);
+    color: rgba(255,255,255,.8);
+    border: 1px solid rgba(255,255,255,.15);
+    white-space: nowrap;
+}
+.ls-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #ff4444; flex-shrink: 0;
+    transition: background .3s;
+}
+#loginStatus.online .ls-dot { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+#loginStatus.online { color: #fff; }
+
+#btnLogin {
+    background: rgba(255,255,255,.15);
+    border: 1px solid rgba(255,255,255,.3);
+    color: #fff; font-size: 12px; font-weight: 700;
+    padding: 7px 16px; border-radius: 22px; cursor: pointer;
+    display: flex; align-items: center; gap: 7px;
+    transition: background .2s, transform .15s;
+    font-family: inherit; white-space: nowrap;
+    backdrop-filter: blur(8px);
+}
+#btnLogin:hover { background: rgba(255,255,255,.25); transform: translateY(-1px); }
+
+/* ═══════════════════════════════════════════
+   THEME TOGGLE
+═══════════════════════════════════════════ */
+.theme-toggle { cursor: pointer; display: flex; align-items: center; flex-shrink: 0; }
+.theme-toggle input { display: none; }
+.theme-toggle-track {
+    width: 50px; height: 26px;
+    background: rgba(0,0,0,.3);
+    border: 1px solid rgba(255,255,255,.2);
+    border-radius: 13px; position: relative;
+    display: flex; align-items: center;
+    padding: 0 4px; justify-content: space-between;
+    transition: background .3s;
+}
+.theme-icon { font-size: 10px; z-index: 1; transition: opacity .2s; }
+.theme-icon--dark  { color: #c084fc; }
+.theme-icon--light { color: #fbbf24; }
+.theme-thumb {
+    position: absolute; left: 3px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,.35);
+    transition: left .25s cubic-bezier(.4,0,.2,1);
+}
+#themeToggle:checked ~ .theme-toggle-track .theme-thumb { left: 27px; }
+#themeToggle:not(:checked) ~ .theme-toggle-track { background: rgba(255,255,255,.85); border-color: rgba(0,0,0,.15); }
+#themeToggle:not(:checked) ~ .theme-toggle-track .theme-thumb { background: #1877f2; left: 3px; }
+
+/* ═══════════════════════════════════════════
+   STATUS FLASH BAR
+═══════════════════════════════════════════ */
+#statusBar {
+    display: none; padding: 9px 22px;
+    font-size: 12px; font-weight: 600;
+    flex-shrink: 0; border-bottom: 1px solid transparent;
+    transition: all .3s;
+}
+#statusBar.status-bar--success { display: flex; align-items: center; gap: 8px; background: rgba(34,197,94,.1);  color: #4ade80; border-color: rgba(34,197,94,.2); }
+#statusBar.status-bar--error   { display: flex; align-items: center; gap: 8px; background: rgba(239,68,68,.1);  color: #f87171; border-color: rgba(239,68,68,.2); }
+#statusBar.status-bar--warning { display: flex; align-items: center; gap: 8px; background: rgba(251,191,36,.1); color: #fbbf24; border-color: rgba(251,191,36,.2); }
+#statusBar.status-bar--info    { display: flex; align-items: center; gap: 8px; background: rgba(96,165,250,.1); color: #60a5fa; border-color: rgba(96,165,250,.2); }
+
+/* ═══════════════════════════════════════════
+   3-COLUMN BODY
+═══════════════════════════════════════════ */
+.pw-body { flex: 1; display: flex; overflow: hidden; min-height: 0; }
+
+/* ───────────────────────────────────────────
+   COLUMN 1 — PAGES
+─────────────────────────────────────────── */
+.col-pages {
+    width: 230px; min-width: 230px;
+    background: #161b27;
+    border-right: 1px solid rgba(255,255,255,.07);
+    display: flex; flex-direction: column; overflow: hidden;
+}
+.col-hdr {
+    padding: 16px 14px 12px;
+    border-bottom: 1px solid rgba(255,255,255,.07);
+    flex-shrink: 0;
+}
+.col-hdr-title {
+    display: flex; align-items: center; gap: 8px;
+    color: #e4e6eb; font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .6px;
+}
+.col-hdr-title i { color: #0084ff; font-size: 12px; }
+
+.pages-list { flex: 1; overflow-y: auto; padding: 8px; }
+#pageCards { display: flex; flex-direction: column; gap: 3px; }
+
+.page-card {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 10px; border-radius: 10px;
+    cursor: pointer; transition: all .15s;
+    border: 1px solid transparent;
+    position: relative;
+}
+.page-card:hover { background: rgba(255,255,255,.05); }
+.page-card.page-card--selected {
+    background: linear-gradient(135deg, rgba(0,132,255,.15), rgba(123,47,247,.1));
+    border-color: rgba(0,132,255,.3);
+}
+.page-card__logo {
+    width: 40px; height: 40px; border-radius: 50%;
+    object-fit: cover; flex-shrink: 0;
+    border: 2px solid rgba(255,255,255,.1);
+    box-shadow: 0 2px 8px rgba(0,0,0,.4);
+}
+.page-card__logo--placeholder {
+    background: linear-gradient(135deg, #1877f2, #7b2ff7);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px; color: white;
+    width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+}
+.page-card__info { flex: 1; overflow: hidden; min-width: 0; }
+.page-card__name {
+    color: #e4e6eb; font-size: 12px; font-weight: 600;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    line-height: 1.3;
+}
+.page-card__category {
+    color: #4e5566; font-size: 10px; margin-top: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.page-card__sel-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #0084ff; flex-shrink: 0;
+    opacity: 0; transition: opacity .15s;
+    box-shadow: 0 0 8px #0084ff;
+}
+.page-card.page-card--selected .page-card__sel-dot { opacity: 1; }
+
+.pages-empty-state {
+    padding: 30px 14px; text-align: center;
+}
+.pages-empty-state i { font-size: 32px; color: #1877f2; margin-bottom: 12px; display: block; opacity: .4; }
+.pages-empty-state p { font-size: 11px; color: #4e5566; line-height: 1.7; }
+.pages-empty-state strong { color: #7b8498; }
+
+/* ───────────────────────────────────────────
+   COLUMN 2 — COMPOSE + SETTINGS + SEND
+─────────────────────────────────────────── */
+.col-compose {
+    width: 340px; min-width: 340px;
+    background: #13151f;
+    border-right: 1px solid rgba(255,255,255,.07);
+    display: flex; flex-direction: column;
+    overflow-y: auto; overflow-x: hidden;
+}
+
+.c2-section {
+    padding: 18px 18px 14px;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    flex-shrink: 0;
+}
+.c2-section:last-child { border-bottom: none; padding-bottom: 24px; }
+
+.c2-section-hdr {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+}
+.c2-section-hdr h3 {
+    display: flex; align-items: center; gap: 8px;
+    color: #c8cdd8; font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .5px;
+}
+.c2-section-hdr h3 i { color: #0084ff; }
+
+/* Refresh button */
+#btnFetchPages {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+    color: #7b8498; font-size: 11px; font-weight: 700;
+    padding: 6px 12px; border-radius: 8px; cursor: pointer;
+    transition: all .2s; font-family: inherit;
+}
+#btnFetchPages:hover { background: rgba(255,255,255,.1); color: #c8cdd8; }
+#btnFetchPages.is-loading { opacity: .5; pointer-events: none; }
+
+/* Textarea */
+#messageText {
+    width: 100%;
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 12px; color: #e4e6eb;
+    font-size: 13px; font-family: inherit; line-height: 1.6;
+    padding: 12px 14px; outline: none; resize: none;
+    transition: border-color .2s, background .2s;
+    min-height: 110px;
+}
+#messageText::placeholder { color: #3a3f50; }
+#messageText:focus {
+    border-color: rgba(0,132,255,.5);
+    background: rgba(0,132,255,.05);
+}
+
+#charCount {
+    font-size: 10px; color: #3a3f50; text-align: right; margin-top: 6px;
+    font-weight: 600; letter-spacing: .3px;
+}
+#charCount.char-counter--warning { color: #f59e0b; }
+#charCount.char-counter--danger  { color: #ef4444; }
+
+.compose-warn {
+    display: flex; gap: 10px; margin-top: 12px;
+    padding: 10px 12px;
+    background: rgba(245,158,11,.06);
+    border: 1px solid rgba(245,158,11,.2);
+    border-radius: 10px;
+    font-size: 11px; color: #6b7280; line-height: 1.6;
+}
+.compose-warn i { color: #f59e0b; font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+.compose-warn strong { color: #d97706; }
+
+/* Delay input */
+.delay-label {
+    font-size: 11px; color: #4e5566; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .4px; margin-bottom: 8px;
+}
+.delay-row { display: flex; align-items: center; gap: 10px; }
+.delay-input-wrap { display: flex; align-items: center; flex: 1; }
+#delayMs {
+    flex: 1; background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 10px 0 0 10px; color: #e4e6eb; font-size: 13px;
+    padding: 9px 12px; outline: none; font-family: inherit;
+    transition: border-color .2s;
+}
+#delayMs:focus { border-color: rgba(0,132,255,.5); }
+.delay-unit {
+    background: rgba(255,255,255,.07);
+    border: 1px solid rgba(255,255,255,.1); border-left: none;
+    border-radius: 0 10px 10px 0;
+    color: #4e5566; font-size: 12px; font-weight: 700;
+    padding: 9px 12px; white-space: nowrap;
+}
+.delay-hint { font-size: 10px; color: #2e3444; margin-top: 7px; font-weight: 500; }
+
+/* Load convos button */
+#btnLoadConvos {
+    width: 100%; padding: 11px; border-radius: 10px;
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.1);
+    color: #7b8498; font-size: 13px; font-weight: 700;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    gap: 8px; transition: all .2s; font-family: inherit; margin-bottom: 12px;
+}
+#btnLoadConvos:hover { background: rgba(0,132,255,.1); border-color: rgba(0,132,255,.3); color: #4da3ff; }
+#btnLoadConvos.is-loading { opacity: .5; pointer-events: none; }
+
+#sendHint {
+    font-size: 11px; color: #2e3444; text-align: center;
+    margin-bottom: 14px; font-weight: 500;
+}
+
+/* Action buttons */
+.action-btns { display: flex; flex-direction: column; gap: 8px; }
+.act-btn {
+    width: 100%; padding: 11px; border-radius: 10px;
+    border: none; font-size: 13px; font-weight: 700;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    gap: 8px; font-family: inherit;
+    transition: opacity .2s, transform .15s, filter .2s;
+    letter-spacing: .1px;
+}
+.act-btn:hover:not(:disabled) { filter: brightness(1.1); transform: translateY(-1px); }
+.act-btn:active:not(:disabled) { transform: translateY(0); }
+.act-btn:disabled { opacity: .35; cursor: not-allowed; }
+.act-btn.is-loading { opacity: .5; pointer-events: none; }
+#btnStart  { background: linear-gradient(135deg, #16a34a, #22c55e); color: #fff; box-shadow: 0 4px 14px rgba(34,197,94,.25); }
+#btnPause  { background: linear-gradient(135deg, #b45309, #f59e0b); color: #fff; box-shadow: 0 4px 14px rgba(245,158,11,.2); }
+#btnResume { background: rgba(255,255,255,.07); color: #c8cdd8; border: 1px solid rgba(255,255,255,.12); }
+#btnStop   { background: linear-gradient(135deg, #b91c1c, #ef4444); color: #fff; box-shadow: 0 4px 14px rgba(239,68,68,.2); }
+
+/* MODE TOGGLE */
+.mode-pills { display: flex; gap: 4px; }
+.mode-pill {
+    padding: 5px 11px; border-radius: 20px; font-size: 11px; font-weight: 700;
+    cursor: pointer; border: 1px solid rgba(255,255,255,.12);
+    background: transparent; color: #4e5566; font-family: inherit;
+    transition: all .2s;
+}
+.mode-pill.active { background: rgba(0,132,255,.2); color: #4da3ff; border-color: rgba(0,132,255,.35); }
+.mode-pill:hover:not(.active) { background: rgba(255,255,255,.05); color: #7b8498; }
+
+/* Auto status card */
+.auto-status-card {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 10px 12px; margin-bottom: 12px;
+    background: rgba(96,165,250,.06); border: 1px solid rgba(96,165,250,.15);
+    border-radius: 10px; font-size: 12px; color: #7b8498; line-height: 1.5;
+    min-height: 40px;
+}
+.auto-status-card i { flex-shrink: 0; margin-top: 1px; font-size: 13px; }
+.auto-status-card.is-error   { background: rgba(239,68,68,.06);  border-color: rgba(239,68,68,.2);  }
+.auto-status-card.is-success { background: rgba(34,197,94,.06);  border-color: rgba(34,197,94,.2);  }
+.auto-status-card.is-warn    { background: rgba(251,191,36,.06); border-color: rgba(251,191,36,.2); }
+.auto-page-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;
+    background: rgba(0,132,255,.12); color: #4da3ff;
+    border: 1px solid rgba(0,132,255,.2); margin-bottom: 10px;
+}
+
+/* ───────────────────────────────────────────
+   COLUMN 3 — STATS + RECIPIENTS
+─────────────────────────────────────────── */
+.col-stats {
+    flex: 1; background: #0f1117;
+    display: flex; flex-direction: column; overflow: hidden; min-width: 0;
+}
+
+/* Stat cards */
+.stat-strip {
+    display: flex;
+    border-bottom: 1px solid rgba(255,255,255,.07);
+    flex-shrink: 0;
+}
+.stat-box {
+    flex: 1; padding: 18px 14px;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    border-right: 1px solid rgba(255,255,255,.07);
+    background: #13151f;
+    position: relative; overflow: hidden;
+}
+.stat-box:last-child { border-right: none; }
+.stat-box::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 2px;
+}
+.stat-box.total::before  { background: linear-gradient(90deg, #1877f2, #7b2ff7); }
+.stat-box.sent::before   { background: linear-gradient(90deg, #16a34a, #22c55e); }
+.stat-box.failed::before { background: linear-gradient(90deg, #b91c1c, #ef4444); }
+.stat-box-icon { font-size: 14px; }
+.stat-box.total  .stat-box-icon { color: #4da3ff; }
+.stat-box.sent   .stat-box-icon { color: #4ade80; }
+.stat-box.failed .stat-box-icon { color: #f87171; }
+.stat-box-val { font-size: 28px; font-weight: 800; color: #e4e6eb; line-height: 1; }
+.stat-box-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #2e3444; }
+
+/* Progress */
+.progress-area {
+    padding: 14px 20px;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    flex-shrink: 0;
+    background: #13151f;
+}
+.progress-top {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 8px;
+}
+.progress-top-left { font-size: 11px; font-weight: 700; color: #2e3444; text-transform: uppercase; letter-spacing: .5px; }
+.progress-top-right { display: flex; align-items: center; gap: 12px; }
+#etaText   { font-size: 11px; color: #4da3ff; font-weight: 600; }
+#progressPct { font-size: 13px; color: #c8cdd8; font-weight: 800; }
+.progress-track {
+    height: 6px; background: rgba(255,255,255,.07);
+    border-radius: 6px; overflow: hidden;
+}
+#progressBar {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, #1877f2, #7b2ff7, #0084ff);
+    background-size: 200% 100%;
+    border-radius: 6px;
+    transition: width .4s ease;
+    animation: shimmer 2s linear infinite;
+}
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+/* Recipients area */
+.recipients-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.rec-hdr {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px 10px;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    flex-shrink: 0;
+}
+.rec-hdr-left {
+    display: flex; align-items: center; gap: 8px;
+    color: #c8cdd8; font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .5px;
+}
+.rec-hdr-left i { color: #0084ff; }
+.rec-hdr-right { display: flex; align-items: center; gap: 8px; }
+#recipientFilter {
+    background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+    color: #7b8498; font-size: 11px; padding: 5px 10px;
+    border-radius: 8px; outline: none; cursor: pointer; font-family: inherit;
+}
+#recipientCount {
+    background: rgba(0,132,255,.15); color: #4da3ff;
+    border-radius: 10px; font-size: 10px; font-weight: 800;
+    padding: 3px 10px; border: 1px solid rgba(0,132,255,.25);
+    min-width: 28px; text-align: center;
+}
+
+/* Table */
+.rec-table { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+.rec-thead {
+    display: grid; grid-template-columns: 1.4fr .8fr 1fr;
+    padding: 8px 20px;
+    font-size: 10px; font-weight: 700; color: #2e3444;
+    text-transform: uppercase; letter-spacing: .5px;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+    flex-shrink: 0; background: #0f1117;
+}
+#recipients { flex: 1; overflow-y: auto; }
+.table__row {
+    display: grid; grid-template-columns: 1.4fr .8fr 1fr;
+    padding: 9px 20px; font-size: 11px;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+    align-items: center; transition: background .15s;
+}
+.table__row:hover { background: rgba(255,255,255,.03); }
+.mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    color: #4e5566; font-size: 11px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.error {
+    color: #f87171; font-size: 11px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.badge--send-status {
+    display: inline-block; padding: 3px 9px;
+    border-radius: 20px; font-size: 10px; font-weight: 800;
+    letter-spacing: .2px;
+}
+.badge--pending { background: rgba(96,165,250,.12);  color: #60a5fa; border: 1px solid rgba(96,165,250,.2); }
+.badge--sent    { background: rgba(74,222,128,.1);   color: #4ade80; border: 1px solid rgba(74,222,128,.2); }
+.badge--failed  { background: rgba(248,113,113,.1);  color: #f87171; border: 1px solid rgba(248,113,113,.2); }
+.badge--label   { background: rgba(192,132,252,.1);  color: #c084fc; padding: 2px 7px; font-size: 10px; border-radius: 8px; margin-left: 4px; border: 1px solid rgba(192,132,252,.2); }
+
+.table-empty { padding: 60px 24px; text-align: center; }
+.table-empty__icon { font-size: 36px; margin-bottom: 12px; opacity: .4; }
+.table-empty div { font-size: 13px; color: #2e3444; line-height: 1.7; }
+
+/* ═══════════════════════════════════════════
+   LIGHT MODE
+═══════════════════════════════════════════ */
+body.light { background: #f0f2f5; }
+body.light .pw { background: #f0f2f5; }
+body.light #loginStatus { background: rgba(0,0,0,.15); }
+body.light .col-pages { background: #fff; border-right-color: rgba(0,0,0,.1); }
+body.light .col-hdr { border-bottom-color: rgba(0,0,0,.1); }
+body.light .col-hdr-title { color: #1c1e21; }
+body.light .page-card:hover { background: rgba(0,0,0,.04); }
+body.light .page-card.page-card--selected { background: linear-gradient(135deg,rgba(0,132,255,.1),rgba(123,47,247,.06)); border-color: rgba(0,132,255,.3); }
+body.light .page-card__name { color: #1c1e21; }
+body.light .page-card__category { color: #8a8d91; }
+body.light .col-compose { background: #fafafa; border-right-color: rgba(0,0,0,.08); }
+body.light .c2-section { border-bottom-color: rgba(0,0,0,.08); }
+body.light .c2-section-hdr h3 { color: #1c1e21; }
+body.light #messageText { background: #fff; border-color: rgba(0,0,0,.15); color: #1c1e21; }
+body.light #messageText::placeholder { color: #bcc0c9; }
+body.light #charCount { color: #8a8d91; }
+body.light .delay-label { color: #65676b; }
+body.light #delayMs { background: #fff; border-color: rgba(0,0,0,.15); color: #1c1e21; }
+body.light .delay-unit { background: #f0f2f5; border-color: rgba(0,0,0,.15); border-left-color: rgba(0,0,0,.15); color: #65676b; }
+body.light #sendHint { color: #adb5bd; }
+body.light #btnFetchPages { background: rgba(0,0,0,.05); border-color: rgba(0,0,0,.1); color: #65676b; }
+body.light #btnFetchPages:hover { background: rgba(0,0,0,.09); color: #1c1e21; }
+body.light #btnLoadConvos { background: #fff; border-color: rgba(0,0,0,.12); color: #65676b; }
+body.light #btnLoadConvos:hover { background: rgba(0,132,255,.06); border-color: rgba(0,132,255,.3); color: #0084ff; }
+body.light #btnResume { background: rgba(0,0,0,.06); color: #1c1e21; border-color: rgba(0,0,0,.12); }
+body.light .col-stats { background: #f0f2f5; }
+body.light .stat-strip { border-bottom-color: rgba(0,0,0,.1); }
+body.light .stat-box { background: #fff; border-right-color: rgba(0,0,0,.08); }
+body.light .stat-box-val { color: #1c1e21; }
+body.light .stat-box-lbl { color: #8a8d91; }
+body.light .progress-area { background: #fff; border-bottom-color: rgba(0,0,0,.08); }
+body.light .progress-top-left { color: #8a8d91; }
+body.light #progressPct { color: #1c1e21; }
+body.light .progress-track { background: rgba(0,0,0,.09); }
+body.light .rec-hdr { border-bottom-color: rgba(0,0,0,.08); }
+body.light .rec-hdr-left { color: #1c1e21; }
+body.light #recipientFilter { background: #fff; border-color: rgba(0,0,0,.12); color: #65676b; }
+body.light .rec-thead { background: #f0f2f5; color: #8a8d91; border-bottom-color: rgba(0,0,0,.08); }
+body.light .table__row { border-bottom-color: rgba(0,0,0,.05); }
+body.light .table__row:hover { background: rgba(0,0,0,.03); }
+body.light .mono { color: #65676b; }
+body.light .table-empty div { color: #8a8d91; }
+body.light .mode-pill { color: #8a8d91; border-color: rgba(0,0,0,.12); }
+body.light .mode-pill.active { background: rgba(0,132,255,.1); }
+body.light .auto-status-card { background: rgba(96,165,250,.05); border-color: rgba(96,165,250,.2); color: #65676b; }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.18); }
+body.light ::-webkit-scrollbar-thumb { background: rgba(0,0,0,.12); }
+body.light ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,.2); }
+
+/* RESPONSIVE */
+@media (max-width: 1100px) {
+    .col-pages { width: 64px; min-width: 64px; }
+    .col-hdr-title span, .page-card__info, .page-card__sel-dot { display: none; }
+    .col-hdr { padding: 14px 8px; justify-content: center; display: flex; }
+    .pages-list { padding: 6px 4px; }
+    .page-card { justify-content: center; padding: 8px 0; }
+}
+@media (max-width: 900px) {
+    .col-pages { display: none; }
+    .col-compose { width: 280px; min-width: 280px; }
+}
+@media (max-width: 640px) {
+    .col-compose { width: 100%; border-right: none; }
+    .col-stats { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ MAIN LAYOUT ══════════════════════════ -->
+<div class="pw">
+
+    <!-- Top bar -->
+    <div class="pw-topbar">
+        <div class="pw-topbar-logo"><i class="fa-solid fa-bullhorn"></i></div>
+        <div class="pw-topbar-title">
+            <h1>FB Broadcaster Pro</h1>
+            <p>Facebook Page Broadcasting Tool</p>
+        </div>
+        <div id="loginStatus">
+            <span class="ls-dot"></span>
+            <span id="loginStatusText">Not connected</span>
+        </div>
+        <label class="theme-toggle" title="Dark / Light theme">
+            <input type="checkbox" id="themeToggle" checked>
+            <span class="theme-toggle-track">
+                <i class="fa-solid fa-moon theme-icon theme-icon--dark"></i>
+                <i class="fa-solid fa-sun theme-icon theme-icon--light"></i>
+                <span class="theme-thumb"></span>
+            </span>
+        </label>
+        <button id="btnLogin">
+            <i class="fa-brands fa-facebook" style="font-size:14px;"></i> Login with Facebook
+        </button>
+    </div>
+
+    <!-- Status bar -->
+    <div id="statusBar"></div>
+
+    <!-- Body -->
+    <div class="pw-body">
+
+        <!-- ── Column 1: Pages ──────────────── -->
+        <div class="col-pages">
+            <div class="col-hdr">
+                <div class="col-hdr-title">
+                    <i class="fa-solid fa-flag"></i>
+                    <span>Pages</span>
+                </div>
+            </div>
+            <div class="pages-list">
+                <div id="pageCards">
+                    <div class="pages-empty-state">
+                        <i class="fa-brands fa-facebook"></i>
+                        <p>Login then click <strong>Refresh</strong> to load your pages</p>
+                    </div>
+                </div>
+                <select id="pageSelect" style="display:none;"></select>
+                <img id="pageLogo" style="display:none;" src="" alt="">
+            </div>
+        </div>
+
+        <!-- ── Column 2: Compose + Settings ── -->
+        <div class="col-compose">
+
+            <!-- Compose -->
+            <div class="c2-section">
+                <div class="c2-section-hdr">
+                    <h3><i class="fa-solid fa-pen-to-square"></i> Message</h3>
+                    <button id="btnFetchPages" title="Reload Pages">
+                        <i class="fa-solid fa-rotate-right"></i> Refresh Pages
+                    </button>
+                </div>
+                <textarea id="messageText" rows="6"
+                    placeholder="Write your broadcast message here…"></textarea>
+                <div id="charCount">0 / 2000</div>
+                <div class="compose-warn">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <div>
+                        Promotional messages may violate Facebook policies.
+                        <strong>SEND AT YOUR OWN RISK.</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings -->
+            <div class="c2-section">
+                <div class="c2-section-hdr">
+                    <h3><i class="fa-solid fa-sliders"></i> Settings</h3>
+                </div>
+                <div class="delay-label">Delay between messages</div>
+                <div class="delay-row">
+                    <div class="delay-input-wrap">
+                        <input id="delayMs" type="number" min="500" step="100" value="1200">
+                        <span class="delay-unit">ms</span>
+                    </div>
+                </div>
+                <div class="delay-hint">Minimum 500 ms · Recommended 1200 ms to avoid rate limits</div>
+            </div>
+
+            <!-- Send -->
+            <div class="c2-section">
+                <div class="c2-section-hdr">
+                    <h3><i class="fa-solid fa-paper-plane"></i> Send</h3>
+                    <div class="mode-pills">
+                        <button class="mode-pill active" id="modeManualBtn">Manual</button>
+                        <button class="mode-pill"        id="modeAutoBtn">Auto All</button>
+                    </div>
+                </div>
+
+                <!-- MANUAL MODE -->
+                <div id="manualControls">
+                    <button id="btnLoadConvos">
+                        <i class="fa-solid fa-comments"></i> Load Conversations
+                    </button>
+                    <div id="sendHint">Select a page and load conversations first</div>
+                    <div class="action-btns">
+                        <button id="btnStart"  class="act-btn" title="Start (Ctrl+Enter)">
+                            <i class="fa-solid fa-play"></i> Start Broadcast
+                        </button>
+                        <button id="btnPause"  class="act-btn">
+                            <i class="fa-solid fa-pause"></i> Pause
+                        </button>
+                        <button id="btnResume" class="act-btn">
+                            <i class="fa-solid fa-rotate-right"></i> Resume
+                        </button>
+                        <button id="btnStop"   class="act-btn">
+                            <i class="fa-solid fa-stop"></i> Stop
+                        </button>
+                    </div>
+                </div>
+
+                <!-- AUTO ALL PAGES MODE -->
+                <div id="autoControls" style="display:none;">
+                    <div class="auto-status-card" id="autoStatusCard">
+                        <i class="fa-solid fa-circle-info" style="color:#60a5fa;"></i>
+                        <span>All pages will be sent sequentially — one by one automatically.</span>
+                    </div>
+                    <div id="autoPageBadge" style="display:none;" class="auto-page-badge">
+                        <i class="fa-solid fa-flag"></i>
+                        <span id="autoPageBadgeText">Page 1 / 1</span>
+                    </div>
+                    <div class="action-btns">
+                        <button id="btnAutoStart" class="act-btn" style="background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;box-shadow:0 4px 14px rgba(34,197,94,.25);">
+                            <i class="fa-solid fa-play"></i> Auto Start All Pages
+                        </button>
+                        <button id="btnAutoPause" class="act-btn" disabled style="background:linear-gradient(135deg,#b45309,#f59e0b);color:#fff;box-shadow:0 4px 14px rgba(245,158,11,.2);">
+                            <i class="fa-solid fa-pause"></i> Pause
+                        </button>
+                        <button id="btnAutoResume" class="act-btn" disabled style="background:rgba(255,255,255,.07);color:#c8cdd8;border:1px solid rgba(255,255,255,.12);">
+                            <i class="fa-solid fa-rotate-right"></i> Resume
+                        </button>
+                        <button id="btnAutoStop" class="act-btn" disabled style="background:linear-gradient(135deg,#b91c1c,#ef4444);color:#fff;box-shadow:0 4px 14px rgba(239,68,68,.2);">
+                            <i class="fa-solid fa-stop"></i> Stop
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Column 3: Stats + Recipients ── -->
+        <div class="col-stats">
+
+            <!-- Stats -->
+            <div class="stat-strip">
+                <div class="stat-box total">
+                    <i class="fa-solid fa-list stat-box-icon"></i>
+                    <span class="stat-box-val" id="statTotal">0</span>
+                    <span class="stat-box-lbl">Total</span>
+                </div>
+                <div class="stat-box sent">
+                    <i class="fa-solid fa-circle-check stat-box-icon"></i>
+                    <span class="stat-box-val" id="statSent">0</span>
+                    <span class="stat-box-lbl">Sent</span>
+                </div>
+                <div class="stat-box failed">
+                    <i class="fa-solid fa-circle-xmark stat-box-icon"></i>
+                    <span class="stat-box-val" id="statFailed">0</span>
+                    <span class="stat-box-lbl">Failed</span>
+                </div>
+            </div>
+
+            <!-- Progress -->
+            <div class="progress-area">
+                <div class="progress-top">
+                    <span class="progress-top-left">Progress</span>
+                    <div class="progress-top-right">
+                        <span id="etaText"></span>
+                        <span id="progressPct">0%</span>
+                    </div>
+                </div>
+                <div class="progress-track">
+                    <div id="progressBar"></div>
+                </div>
+            </div>
+
+            <!-- Recipients -->
+            <div class="recipients-area">
+                <div class="rec-hdr">
+                    <div class="rec-hdr-left">
+                        <i class="fa-solid fa-users"></i> Recipients
+                    </div>
+                    <div class="rec-hdr-right">
+                        <select id="recipientFilter">
+                            <option value="all">All</option>
+                            <option value="status:pending">Pending</option>
+                            <option value="status:sent">Sent</option>
+                            <option value="status:failed">Failed</option>
+                        </select>
+                        <span id="recipientCount">0</span>
+                    </div>
+                </div>
+                <div class="rec-table">
+                    <div class="rec-thead">
+                        <div>PSID</div>
+                        <div>Status</div>
+                        <div>Error</div>
+                    </div>
+                    <div id="recipients">
+                        <div class="table-empty">
+                            <div class="table-empty__icon">💬</div>
+                            <div>No recipients yet.<br>Load conversations to begin.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+/* ── Theme toggle ─────────────────────────────── */
+(function() {
+    const toggle = document.getElementById('themeToggle');
+    const saved  = localStorage.getItem('promo_theme');
+    if (saved === 'light') { document.body.classList.add('light'); toggle.checked = false; }
+    toggle.addEventListener('change', function() {
+        if (this.checked) { document.body.classList.remove('light'); localStorage.setItem('promo_theme', 'dark'); }
+        else              { document.body.classList.add('light');    localStorage.setItem('promo_theme', 'light'); }
+    });
+})();
+
+/* ── Override setLoginOnline for custom topbar ── */
+document.addEventListener('DOMContentLoaded', () => {
+    window.setLoginOnline = function() {
+        const ls = document.getElementById('loginStatus');
+        if (ls) ls.classList.add('online');
+        const lt = document.getElementById('loginStatusText');
+        if (lt) lt.textContent = 'Connected';
+    };
+});
+
+/* ── Warn before navigating away while sending ── */
+window.addEventListener('beforeunload', (e) => {
+    if (typeof runtime !== 'undefined' && runtime.isSending) {
+        e.preventDefault();
+        e.returnValue = 'Broadcast is in progress! Leaving will stop sending.';
+    }
+});
+
+/* ═══════════════════════════════════════════════
+   MODE SWITCH  (Manual ↔ Auto All Pages)
+═══════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+    const btnManual = document.getElementById('modeManualBtn');
+    const btnAuto   = document.getElementById('modeAutoBtn');
+    const manual    = document.getElementById('manualControls');
+    const auto      = document.getElementById('autoControls');
+
+    btnManual.addEventListener('click', () => {
+        btnManual.classList.add('active');
+        btnAuto.classList.remove('active');
+        manual.style.display = '';
+        auto.style.display   = 'none';
+    });
+    btnAuto.addEventListener('click', () => {
+        btnAuto.classList.add('active');
+        btnManual.classList.remove('active');
+        auto.style.display   = '';
+        manual.style.display = 'none';
+    });
+
+    document.getElementById('btnAutoStart').addEventListener('click',  startAutoSend);
+    document.getElementById('btnAutoPause').addEventListener('click',  () => { pauseSending();  setAutoButtons('paused');  });
+    document.getElementById('btnAutoResume').addEventListener('click', () => { resumeSending(); setAutoButtons('running'); });
+    document.getElementById('btnAutoStop').addEventListener('click',   () => {
+        stopSending();
+        autoRunning = false;
+        setAutoButtons('idle');
+        setAutoStatus('info', 'Stopped by user.');
+    });
+});
+
+/* ═══════════════════════════════════════════════
+   AUTO SEND ALL PAGES
+═══════════════════════════════════════════════ */
+let autoRunning = false;
+
+async function startAutoSend() {
+    if (autoRunning) return;
+    const pages = JSON.parse(localStorage.getItem('fb_pages') || '[]');
+    if (!pages.length) { setAutoStatus('error', 'No pages loaded. Click Refresh Pages first.'); return; }
+    const msg = document.getElementById('messageText').value.trim();
+    if (!msg) { setAutoStatus('error', 'Please write a message first.'); return; }
+    const delay = Math.max(500, parseInt(document.getElementById('delayMs').value) || 1200);
+
+    autoRunning = true;
+    runtime.isSending = true;
+    runtime.paused = false;
+    setAutoButtons('running');
+
+    let gTotal = 0, gSent = 0, gFailed = 0;
+    const updStats = () => {
+        document.getElementById('statTotal').textContent  = gTotal;
+        document.getElementById('statSent').textContent   = gSent;
+        document.getElementById('statFailed').textContent = gFailed;
+    };
+    document.getElementById('progressBar').style.width = '0%';
+    document.getElementById('progressPct').textContent = '0%';
+    clearRecipients();
+    updStats();
+
+    for (let pi = 0; pi < pages.length; pi++) {
+        if (!runtime.isSending) break;
+        const page = pages[pi];
+        showPageBadge(`Page ${pi + 1} / ${pages.length}: ${page.name}`);
+        setAutoStatus('loading', `Loading conversations for "${page.name}"…`);
+
+        let psids;
+        try {
+            const result = await fetchConversations(page.id, (prog) => {
+                setAutoStatus('loading', `"${page.name}": loading ${prog.fetched}${prog.total ? ' / ' + prog.total : ''} conversations…`);
+            });
+            psids = result.psids;
+        } catch (e) {
+            setAutoStatus('warn', `Skipping "${page.name}": ${e.message}`);
+            await sleep(2000);
+            continue;
+        }
+
+        if (!psids.length) {
+            setAutoStatus('info', `"${page.name}" has no conversations. Moving to next page…`);
+            await sleep(1200);
+            continue;
+        }
+
+        gTotal += psids.length;
+        updStats();
+        setAutoStatus('sending', `Sending to ${psids.length} recipients on "${page.name}"…`);
+        addPageSeparator(page.name, pi + 1, pages.length);
+
+        await new Promise(resolve => {
+            enqueueAndSendUtility({
+                pageId: page.id, messageText: msg, recipientIds: psids, delayMs: delay,
+                onProgress: (data) => {
+                    if (data.item.status === 'sent')   gSent++;
+                    if (data.item.status === 'failed') gFailed++;
+                    updStats();
+                    const pct = Math.round((data.index / data.total) * 100);
+                    document.getElementById('progressBar').style.width = pct + '%';
+                    document.getElementById('progressPct').textContent = pct + '%';
+                    addRecipientRow(data.item);
+                    setAutoStatus('sending', `"${page.name}" (${pi+1}/${pages.length}) — ${data.index} / ${data.total} sent`);
+                },
+                onDone: resolve
+            });
+        });
+
+        if (!runtime.isSending) break;
+        setAutoStatus('success', `✓ "${page.name}" done. ${gSent} sent so far.`);
+        await sleep(1500);
+    }
+
+    autoRunning = false;
+    runtime.isSending = false;
+    setAutoButtons('idle');
+    document.getElementById('autoPageBadge').style.display = 'none';
+    if (gTotal > 0) {
+        document.getElementById('progressBar').style.width = '100%';
+        document.getElementById('progressPct').textContent = '100%';
+        setAutoStatus('success', `All ${pages.length} page(s) done! ✅ ${gSent} sent, ❌ ${gFailed} failed out of ${gTotal} total.`);
+    }
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function setAutoStatus(type, msg) {
+    const card  = document.getElementById('autoStatusCard');
+    const icons = { loading:'fa-spinner fa-spin', sending:'fa-paper-plane', error:'fa-circle-exclamation', warn:'fa-triangle-exclamation', success:'fa-circle-check', info:'fa-circle-info' };
+    const colors = { loading:'#60a5fa', sending:'#4da3ff', error:'#f87171', warn:'#fbbf24', success:'#4ade80', info:'#94a3b8' };
+    card.className = 'auto-status-card' + (type === 'error' ? ' is-error' : type === 'success' ? ' is-success' : type === 'warn' ? ' is-warn' : '');
+    card.innerHTML = `<i class="fa-solid ${icons[type]||'fa-circle-info'}" style="color:${colors[type]||'#94a3b8'};"></i> <span>${msg}</span>`;
+}
+
+function showPageBadge(text) {
+    const b = document.getElementById('autoPageBadge');
+    document.getElementById('autoPageBadgeText').textContent = text;
+    b.style.display = '';
+}
+
+function setAutoButtons(state) {
+    document.getElementById('btnAutoStart').disabled  = state !== 'idle';
+    document.getElementById('btnAutoPause').disabled  = state !== 'running';
+    document.getElementById('btnAutoResume').disabled = state !== 'paused';
+    document.getElementById('btnAutoStop').disabled   = state === 'idle';
+}
+
+function clearRecipients() {
+    const c = document.getElementById('recipients');
+    c.innerHTML = '';
+    document.getElementById('recipientCount').textContent = '0';
+}
+
+function addPageSeparator(pageName, idx, total) {
+    const cont = document.getElementById('recipients');
+    const sep  = document.createElement('div');
+    sep.style.cssText = 'padding:6px 20px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#4da3ff;background:rgba(0,132,255,.07);border-bottom:1px solid rgba(0,132,255,.15);display:flex;align-items:center;gap:6px;';
+    sep.innerHTML = `<i class="fa-solid fa-flag" style="font-size:9px;"></i> ${pageName} (${idx}/${total})`;
+    cont.appendChild(sep);
+}
+
+function addRecipientRow(item) {
+    const cont = document.getElementById('recipients');
+    const statusClass = { sent:'badge--sent', failed:'badge--failed', pending:'badge--pending' }[item.status] || 'badge--pending';
+    const row = document.createElement('div');
+    row.className = 'table__row';
+    row.innerHTML = `
+        <div class="mono">${item.id}</div>
+        <div><span class="badge--send-status ${statusClass}">${item.status}</span></div>
+        <div class="error">${item.error || ''}</div>`;
+    cont.appendChild(row);
+    document.getElementById('recipientCount').textContent = cont.querySelectorAll('.table__row').length;
+    cont.scrollTop = cont.scrollHeight;
+}
+</script>
+<script src="fb_api.js"></script>
+<script src="web_ui.js"></script>
+</body>
+</html>

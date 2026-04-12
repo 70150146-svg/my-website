@@ -1,0 +1,19 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Connecting...</title></head>
+<body>
+<script>
+  // This page is the Facebook OAuth redirect target.
+  // It immediately posts the token hash back to the opener and closes.
+  try {
+    if (window.opener && window.location.hash) {
+      window.opener.postMessage(
+        { type: 'fb_oauth', hash: window.location.hash },
+        window.location.origin
+      );
+    }
+  } catch(e) {}
+  window.close();
+</script>
+</body>
+</html>
