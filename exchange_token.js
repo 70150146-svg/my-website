@@ -5,9 +5,9 @@
  */
 
 const FB_APP_ID  = process.env.FB_APP_ID  || '1077082944153784';
-const FB_API_VER = 'v19.0';
+const FB_API_VER = 'v21.0';
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json');
 
   /* ── Only POST allowed ──────────────────────────────── */

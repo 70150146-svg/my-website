@@ -9,7 +9,7 @@
  *   { method: 'UPLOAD_IMAGE', page_id, token, image_data (base64), mime_type }
  */
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json');
 
   /* ── Only POST allowed ──────────────────────────────── */
@@ -44,7 +44,7 @@ export default async function handler(req, res) {
     const extMap = { 'image/png': 'png', 'image/gif': 'gif', 'image/webp': 'webp' };
     const ext    = extMap[mimeType] || 'jpg';
 
-    const apiUrl   = `https://graph.facebook.com/v19.0/${pageId}/message_attachments?access_token=${encodeURIComponent(uploadToken)}`;
+    const apiUrl   = `https://graph.facebook.com/v21.0/${pageId}/message_attachments?access_token=${encodeURIComponent(uploadToken)}`;
     const formData = new FormData();
     formData.append('message', JSON.stringify({
       attachment: { type: 'image', payload: { is_reusable: true } },
@@ -78,7 +78,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'token is required' });
     }
     const qs = new URLSearchParams({ ...params, access_token: token });
-    targetUrl = `https://graph.facebook.com/v19.0/${path.replace(/^\//, '')}?${qs}`;
+    targetUrl = `https://graph.facebook.com/v21.0/${path.replace(/^\//, '')}?${qs}`;
   } else {
     return res.status(400).json({ error: 'path or url is required' });
   }

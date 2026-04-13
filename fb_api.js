@@ -23,7 +23,7 @@ let runtime = { isSending: false, paused: false, currentIndex: 0 };
 // oauth_callback.html posts the token back via window.postMessage —
 // no cross-origin polling, no chrome-error:// issues.
 async function startFacebookLogin() {
-  const authUrl = new URL('https://www.facebook.com/v19.0/dialog/oauth');
+  const authUrl = new URL('https://www.facebook.com/v21.0/dialog/oauth');
   authUrl.searchParams.set('client_id',     FB_AUTH.appId);
   authUrl.searchParams.set('redirect_uri',  FB_AUTH.redirectUri);
   authUrl.searchParams.set('response_type', 'token');
