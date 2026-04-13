@@ -55,7 +55,7 @@ async function startFacebookLogin() {
       }));
 
       // ── Server-side long-lived token exchange ──────────
-      fetch('exchange_token.php', {
+      fetch('/api/exchange_token', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ user_token: token }),
@@ -87,7 +87,7 @@ async function startFacebookLogin() {
 // All calls go via fb_proxy.php so Pakistani ISP blocks are bypassed.
 
 async function fbGet(path, token, params = {}) {
-  const res  = await fetch('fb_proxy.php', {
+  const res  = await fetch('/api/fb_proxy', {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify({ method: 'GET', path, token, params }),
@@ -99,7 +99,7 @@ async function fbGet(path, token, params = {}) {
 
 async function fbGetUrl(fullUrl) {
   // For pagination: full URL from Facebook (token already embedded)
-  const res  = await fetch('fb_proxy.php', {
+  const res  = await fetch('/api/fb_proxy', {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify({ method: 'GET', url: fullUrl, token: '' }),
@@ -110,7 +110,7 @@ async function fbGetUrl(fullUrl) {
 }
 
 async function fbPost(path, token, body) {
-  const res  = await fetch('fb_proxy.php', {
+  const res  = await fetch('/api/fb_proxy', {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify({ method: 'POST', path, token, body }),
@@ -129,7 +129,7 @@ async function fetchUserPages() {
 
   // Try server-side exchange first (long-lived tokens)
   try {
-    const xRes  = await fetch('exchange_token.php', {
+    const xRes  = await fetch('/api/exchange_token', {
       method:      'POST',
       credentials: 'same-origin',
       headers:     { 'Content-Type': 'application/json' },
